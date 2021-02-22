@@ -10,7 +10,7 @@ use URI::QueryParam;
 use Log::Any qw($log);
 use Future 0.44;
 use Future::AsyncAwait;
-use Future::HTTP;
+use Future::HTTP::AnyEvent;
 use Web::Scraper;
 use Encode qw(find_mime_encoding);
 use Time::HiRes qw(time);
@@ -74,7 +74,7 @@ has 'fetch_image_data_ft' => (
 has '_ua' => (
     is      => 'ro',
     lazy    => 1,
-    default => sub {Future::HTTP->new()},
+    default => sub {Future::HTTP::AnyEvent->new()},
 );
 
 has '_html_meta_scraper' => (
