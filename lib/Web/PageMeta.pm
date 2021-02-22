@@ -269,7 +269,7 @@ than default location.
 Returns future object for fetching paga meta data. See L</"ASYNC USE">.
 On done L</page_meta> hash is returned.
 
-has fetch_image_data_ft
+=head2 fetch_image_data_ft
 
 Returns future object for fetching image data. See L</"ASYNC USE">
 On done L</image_data> scalar is returned.
