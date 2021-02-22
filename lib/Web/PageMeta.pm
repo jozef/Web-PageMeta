@@ -106,15 +106,16 @@ sub _build__html_meta_scraper {
 async sub _build__fetch_page_meta_ft {
     my ($self) = @_;
 
+    # await url htmp http download
     my $timer = time();
     my ($body, $headers) =
         await $self->_ua->http_get($self->url, headers => {'Accept' => 'text/html',},);
     my $status = _get_update_status_reason($headers);
     $log->debugf('page meta fetch %d %s finished in %.3fs', $status, $self->url, time() - $timer);
-
     HTTP::Exception->throw($status, status_message => $headers->{Reason})
         if ($status != 200);
 
+    # turn body to utf-8
     if (my $content_type = $headers->{'content-type'}) {
         if (my ($charset) = ($content_type =~ m/\bcharset=(.+)/)) {
             if (my $decoder = find_mime_encoding($charset)) {
@@ -123,6 +124,7 @@ async sub _build__fetch_page_meta_ft {
         }
     }
 
+    # scrape default head meta
     my $scraper_data = $self->_html_meta_scraper->scrape(\$body);
     my %page_meta    = (
         title       => $scraper_data->{title} // '',
@@ -135,6 +137,7 @@ async sub _build__fetch_page_meta_ft {
         $page_meta{$1} = $val;
     }
 
+    # do any other extra scraping
     if ($self->has_extra_scraper) {
         my $escraper_data = $self->extra_scraper->scrape(\$body);
         foreach my $key (keys %{$escraper_data}) {
@@ -142,6 +145,7 @@ async sub _build__fetch_page_meta_ft {
         }
     }
 
+    # make image links absolute
     if ($page_meta{image}) {
         my $base_url = (
             $scraper_data->{base_href}
@@ -157,19 +161,21 @@ async sub _build__fetch_page_meta_ft {
 async sub _build__fetch_image_data_ft {
     my ($self) = @_;
 
+    # await for image link
     await $self->fetch_page_meta_ft;
     my $fetch_url = $self->image;
     return $self->{image_data} = ''
         unless $fetch_url;
 
+    # await image http download
     my $timer = time();
     my ($body, $headers) = await $self->_ua->http_get($fetch_url);
     my $status = _get_update_status_reason($headers);
     $log->debugf('img fetch %d %s for %s finished in %.3fs',
         $status, $fetch_url, $self->url, time() - $timer);
-
     HTTP::Exception->throw($status, status_message => $headers->{Reason})
         if ($status != 200);
+
     return $self->{image_data} = $body;
 }
 
