@@ -1,6 +1,6 @@
 package Web::PageMeta;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use 5.010;
 use Moose;
@@ -14,6 +14,7 @@ use Future::HTTP::AnyEvent;
 use Web::Scraper;
 use Encode qw(find_mime_encoding);
 use Time::HiRes qw(time);
+use HTTP::Exception;
 
 use namespace::autoclean;
 
@@ -108,11 +109,11 @@ async sub _build__fetch_page_meta_ft {
     my $timer = time();
     my ($body, $headers) =
         await $self->_ua->http_get($self->url, headers => {'Accept' => 'text/html',},);
-    my $status = $headers->{Status};
+    my $status = _get_update_status_reason($headers);
     $log->debugf('page meta fetch %d %s finished in %.3fs', $status, $self->url, time() - $timer);
 
-    die 'failed to fetch ' . $self->url
-        unless $status == 200;
+    HTTP::Exception->throw($status, status_message => $headers->{Reason})
+        if ($status != 200);
 
     if (my $content_type = $headers->{'content-type'}) {
         if (my ($charset) = ($content_type =~ m/\bcharset=(.+)/)) {
@@ -163,13 +164,23 @@ async sub _build__fetch_image_data_ft {
 
     my $timer = time();
     my ($body, $headers) = await $self->_ua->http_get($fetch_url);
-    my $status = $headers->{Status};
+    my $status = _get_update_status_reason($headers);
     $log->debugf('img fetch %d %s for %s finished in %.3fs',
         $status, $fetch_url, $self->url, time() - $timer);
 
-    die 'failed to fetch ' . $fetch_url
-        unless $status == 200;
+    HTTP::Exception->throw($status, status_message => $headers->{Reason})
+        if ($status != 200);
     return $self->{image_data} = $body;
+}
+
+sub _get_update_status_reason {
+    my ($headers) = @_;
+    my $status = $headers->{Status};
+    unless (HTTP::Status::status_message($status)) {
+        $headers->{Reason} = sprintf('(%d) %s', $status, $headers->{Reason});
+        $status = $headers->{Status} = 503;
+    }
+    return $status;
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -218,6 +229,9 @@ async fetch previews and images:
 
 Get (not only) open-graph web page meta data. can be used in both normal
 and async code.
+
+For any other than 200 http status codes during data downloads,
+L<HTTP::Exception> is thrown.
 
 =head1 ACCESSORS
 
