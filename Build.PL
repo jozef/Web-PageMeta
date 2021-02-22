@@ -34,8 +34,8 @@ my $builder = Module::Build->new(
     create_readme  => 1,
     meta_merge     => {
         resources => {
-            repository => 'http://github.com/jozef/Web-PageMeta',
-            bugtracker => 'http://github.com/jozef/Web-PageMeta/issues',
+            repository => 'https://github.com/jozef/Web-PageMeta',
+            bugtracker => 'https://github.com/jozef/Web-PageMeta/issues',
         },
         keywords => [qw/ open graph opengraph web page meta title preview /],
     },
