@@ -5,6 +5,7 @@ our $VERSION = '0.04';
 use 5.010;
 use Moose;
 use MooseX::Types::URI qw(Uri);
+use MooseX::StrictConstructor;
 use URI;
 use URI::QueryParam;
 use Log::Any qw($log);
@@ -32,6 +33,14 @@ has 'user_agent' => (
     default =>
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
     lazy => 1,
+);
+
+has 'extra_headers' => (
+    isa      => 'HashRef',
+    is       => 'ro',
+    required => 1,
+    default  => sub {{}},
+    lazy     => 1,
 );
 
 has 'title' => (
@@ -122,6 +131,7 @@ async sub _build__fetch_page_meta_ft {
         headers => {
             'Accept'     => 'text/html',
             'User-Agent' => $self->user_agent,
+            %{$self->extra_headers},
         },
     );
     my $status = _get_update_status_reason($headers);
@@ -187,6 +197,7 @@ async sub _build__fetch_image_data_ft {
         $fetch_url,
         headers => {
             'User-Agent' => $self->user_agent,
+            %{$self->extra_headers},
         },
     );
     my $status = _get_update_status_reason($headers);
@@ -272,6 +283,10 @@ HTTP url to fetch data from.
 
 User-Agent header to use for http requests.
 Default is one from Chrome 89.0.4389.90.
+
+=head2 extra_headers
+
+HashRef with extra http request headers.
 
 =head2 title
 

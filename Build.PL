@@ -12,6 +12,7 @@ my $builder = Module::Build->new(
         'perl'                   => '5.022',    # because of Future::AsyncAwait
         'Moose'                  => 0,
         'MooseX::Types::URI'     => 0,
+        'MooseX::StrictConstructor' => 0,
         'URI'                    => 0,
         'URI::QueryParam'        => 0,
         'Log::Any'               => 0,
