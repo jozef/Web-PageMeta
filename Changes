@@ -1,5 +1,8 @@
 Revision history for Web-PageMeta
 
+0.04    2021
+    - dependency fix (#2 thanks to Slaven Rezić)
+
 0.03    25.02.2021
     - add option to set user-agent for http requests
 

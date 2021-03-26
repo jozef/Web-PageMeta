@@ -8,7 +8,7 @@ use MooseX::Types::URI qw(Uri);
 use URI;
 use URI::QueryParam;
 use Log::Any qw($log);
-use Future 0.44;
+use Future '0.44';
 use Future::AsyncAwait;
 use Future::HTTP::AnyEvent;
 use Web::Scraper;
