@@ -25,6 +25,7 @@ my $builder = Module::Build->new(
         'Time::HiRes'            => 0,
         'namespace::autoclean'   => 0,
         'HTTP::Exception'        => 0,
+        'List::Util'             => 0,
     },
     build_requires => {
         'Test::Most'       => 0,

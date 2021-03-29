@@ -16,6 +16,7 @@ use Web::Scraper;
 use Encode qw(find_mime_encoding);
 use Time::HiRes qw(time);
 use HTTP::Exception;
+use List::Util qw(pairmap);
 
 use namespace::autoclean;
 
@@ -41,6 +42,12 @@ has 'extra_headers' => (
     required => 1,
     default  => sub {{}},
     lazy     => 1,
+);
+
+has 'cookie_jar' => (
+    isa       => 'Object',
+    is        => 'ro',
+    predicate => 'has_cookie_jar',
 );
 
 has 'title' => (
@@ -121,6 +128,24 @@ sub _build__html_meta_scraper {
     return $html_meta_scraper;
 }
 
+sub compile_headers {
+    my ($self) = @_;
+
+    my %headers = (
+        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'User-Agent' => $self->user_agent,
+    );
+    if ($self->has_cookie_jar) {
+        my $cookies = $self->cookie_jar->get_cookies($self->url);
+        if (%$cookies) {
+            $headers{'Cookie'} = join("; ", pairmap {$a . "=" . $b} %$cookies);
+            $headers{'Cookie2'} = '$Version="1"';
+        }
+    }
+    %headers = (%headers, %{$self->extra_headers});
+    return \%headers;
+}
+
 async sub _build__fetch_page_meta_ft {
     my ($self) = @_;
 
@@ -128,11 +153,7 @@ async sub _build__fetch_page_meta_ft {
     my $timer = time();
     my ( $body, $headers ) = await $self->_ua->http_get(
         $self->url,
-        headers => {
-            'Accept'     => 'text/html',
-            'User-Agent' => $self->user_agent,
-            %{$self->extra_headers},
-        },
+        headers => $self->compile_headers,
     );
     my $status = _get_update_status_reason($headers);
     $log->debugf('page meta fetch %d %s finished in %.3fs', $status, $self->url, time() - $timer);
@@ -195,10 +216,7 @@ async sub _build__fetch_image_data_ft {
     my $timer = time();
     my ($body, $headers) = await $self->_ua->http_get(
         $fetch_url,
-        headers => {
-            'User-Agent' => $self->user_agent,
-            %{$self->extra_headers},
-        },
+        headers => $self->compile_headers,
     );
     my $status = _get_update_status_reason($headers);
     $log->debugf('img fetch %d %s for %s finished in %.3fs',
@@ -287,6 +305,12 @@ Default is one from Chrome 89.0.4389.90.
 =head2 extra_headers
 
 HashRef with extra http request headers.
+
+=head2 cookie_jar
+
+Accepts optional L<HTTP::Cookies> compatible object that must provide
+C<get_cookies()> method. If set will send http cookie headers with each
+request.
 
 =head2 title
 
