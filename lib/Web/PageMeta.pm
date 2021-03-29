@@ -336,10 +336,10 @@ Returns hash ref with all open-graph data.
 
 =head2 extra_scraper
 
-L<Web::Scrape> object to fetch image, title or description from different
+L<Web::Scraper> object to fetch image, title or description from different
 than default location.
 
-    use Web::Scrape;
+    use Web::Scraper;
     use Web::PageMeta;
     my $escraper = scraper {
         process_first '.slider .camera_wrap div', 'image' => '@data-src';
