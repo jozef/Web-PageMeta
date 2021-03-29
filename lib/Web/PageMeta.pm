@@ -188,7 +188,7 @@ async sub _build__fetch_image_data_ft {
     # await for image link
     await $self->fetch_page_meta_ft;
     my $fetch_url = $self->image;
-    return $self->{image_data} = ''
+    HTTP::Exception->throw(404, status_message => 'No image found')
         unless $fetch_url;
 
     # await image http download
@@ -303,6 +303,8 @@ Returns image location of the page.
 =head2 image_data
 
 Returns image binary data of L</image> link.
+
+Will throw 404 exception if there is not L</image> link.
 
 =head2 page_meta
 
