@@ -83,6 +83,20 @@ has 'page_meta' => (
     default => sub {$_[0]->fetch_page_meta_ft->get},
 );
 
+has 'page_body_hdr' => (
+    isa     => 'ArrayRef',
+    is      => 'ro',
+    lazy    => 1,
+    default => sub {$_[0]->fetch_page_body_hdr_ft->get},
+);
+
+has 'fetch_page_body_hdr_ft' => (
+    isa     => 'Future',
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build__fetch_page_body_hdr_ft',
+);
+
 has 'fetch_page_meta_ft' => (
     isa     => 'Future',
     is      => 'ro',
@@ -146,7 +160,7 @@ sub compile_headers {
     return \%headers;
 }
 
-async sub _build__fetch_page_meta_ft {
+async sub _build__fetch_page_body_hdr_ft {
     my ($self) = @_;
 
     # await url htmp http download
@@ -159,6 +173,14 @@ async sub _build__fetch_page_meta_ft {
     $log->debugf('page meta fetch %d %s finished in %.3fs', $status, $self->url, time() - $timer);
     HTTP::Exception->throw($status, status_message => $headers->{Reason})
         if ($status != 200);
+
+    return [$body, $headers];
+}
+
+async sub _build__fetch_page_meta_ft {
+    my ($self) = @_;
+
+    my ( $body, $headers ) = @{$self->fetch_page_body_hdr_ft->get};
 
     # turn body to utf-8
     if (my $content_type = $headers->{'content-type'}) {
@@ -349,6 +371,11 @@ than default location.
         extra_scraper => $escraper,
     );
 
+=head2 page_body_hdr
+
+Returns array ref with page [$body,$headers]. Can be useful for
+post-processing or special/additional data extractions.
+
 =head2 fetch_page_meta_ft
 
 Returns future object for fetching paga meta data. See L</"ASYNC USE">.
@@ -358,6 +385,11 @@ On done L</page_meta> hash is returned.
 
 Returns future object for fetching image data. See L</"ASYNC USE">
 On done L</image_data> scalar is returned.
+
+=head2 fetch_page_body_hdr_ft
+
+Returns future object for fetching page content and headers. See L</"ASYNC USE">
+On done L</page_body_hdr> array ref is returned.
 
 =head1 ASYNC USE
 
