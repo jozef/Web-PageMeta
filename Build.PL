@@ -24,7 +24,7 @@ my $builder = Module::Build->new(
         'Encode'                    => '3.06',
         'Time::HiRes'               => '1.9764',
         'namespace::autoclean'      => '0.29',
-        'HTTP::Exception'           => '1.1',
+        'HTTP::Exception'           => '0.04007',
         'List::Util'                => '1.55',
     },
     build_requires => {
