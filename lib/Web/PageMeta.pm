@@ -180,7 +180,7 @@ async sub _build__fetch_page_body_hdr_ft {
 async sub _build__fetch_page_meta_ft {
     my ($self) = @_;
 
-    my ( $body, $headers ) = @{$self->fetch_page_body_hdr_ft->get};
+    my ( $body, $headers ) = @{await $self->fetch_page_body_hdr_ft};
 
     # turn body to utf-8
     if (my $content_type = $headers->{'content-type'}) {
