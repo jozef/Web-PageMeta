@@ -1,6 +1,6 @@
 Revision history for Web-PageMeta
 
-0.05    21.05.2021
+0.06    21.05.2021
     - use Web::Scraper::LibXML = LibXML instead of HTML::TreeBuilder::XPath
 
 0.04    03.04.2021

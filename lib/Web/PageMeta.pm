@@ -1,6 +1,6 @@
 package Web::PageMeta;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use 5.010;
 use Moose;
