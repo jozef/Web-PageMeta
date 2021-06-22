@@ -400,6 +400,17 @@ Constructor, only L</url> is required.
 
 HTTP url to fetch data from.
 
+=head2 timeout
+
+In addition to L<AnyEvent::HTTP> timeout will also check time during download
+as the data are being downloaded and dies when over the limit. Default 5
+minutes.
+
+=head2 max_size
+
+Will die when the document or image size is greater than this limit.
+Default 100MB.
+
 =head2 user_agent
 
 User-Agent header to use for http requests.
@@ -456,6 +467,8 @@ than default location.
 
 Returns array ref with page [$body,$headers]. Can be useful for
 post-processing or special/additional data extractions.
+
+Only C<text/html> content-type is accepted for fetching.
 
 =head2 fetch_page_meta_ft
 
