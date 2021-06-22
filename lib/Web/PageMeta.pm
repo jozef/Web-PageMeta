@@ -27,6 +27,20 @@ has 'url' => (
     coerce   => 1,
 );
 
+has 'timeout' => (
+    isa      => 'Int',
+    is       => 'rw',
+    required => 1,
+    default  => 5 * 60,
+);
+
+has 'max_size' => (
+    isa      => 'Int',
+    is       => 'rw',
+    required => 1,
+    default  => 100 * 1024 * 1024,
+);
+
 has 'user_agent' => (
     isa      => 'Str',
     is       => 'ro',
@@ -164,10 +178,52 @@ async sub _build__fetch_page_body_hdr_ft {
     my ($self) = @_;
 
     # await url htmp http download
-    my $timer = time();
-    my ( $body, $headers ) = await $self->_ua->http_get(
+    my $timer      = time();
+    my $timeout    = $self->timeout;
+    my $timeout_at = $timer + $timeout;
+    my $max_size   = $self->max_size;
+    my $cur_size   = 0;
+    my $body = '';
+    my ( undef, $headers ) = await $self->_ua->http_get(
         $self->url,
-        headers => $self->compile_headers,
+        headers   => $self->compile_headers,
+        timeout   => $timeout,
+        on_header => sub {
+            my ($hdrs) = @_;
+            my $content_type = $hdrs->{"content-type"} || '';
+            if ($content_type =~ /^text\/html\s*(?:;|$)/i) {
+                return 1;
+            }
+            elsif ($hdrs->{Status} != 200) {
+                # non-200 status handled below with exception
+                return 1;
+            }
+            else {
+                $log->warnf( 'unsupported content-type "%s", status "%d", fetching %s',
+                    $content_type, $hdrs->{Status}, $self->url );
+                return 0;
+            }
+        },
+        on_body => sub {
+            my ( $part_body, undef ) = @_;
+
+            $body .= $part_body;
+
+            if ( time() > $timeout_at ) {
+                $log->warnf( 'timeout %ds fetching %s',
+                    $timeout, $self->url );
+                return 0;
+            }
+
+            $cur_size += length($part_body);
+            if ($cur_size > $max_size) {
+                $log->warnf( 'max size %d exceeded with %d fetching %s',
+                    $max_size, $cur_size, $self->url );
+                return 0;
+            }
+
+            return 1;
+        },
     );
     my $status = _get_update_status_reason($headers);
     $log->debugf('page meta fetch %d %s finished in %.3fs', $status, $self->url, time() - $timer);
@@ -235,10 +291,35 @@ async sub _build__fetch_image_data_ft {
         unless $fetch_url;
 
     # await image http download
-    my $timer = time();
-    my ($body, $headers) = await $self->_ua->http_get(
+    my $timer      = time();
+    my $timeout    = $self->timeout;
+    my $timeout_at = $timer + $timeout;
+    my $max_size   = $self->max_size;
+    my $cur_size   = 0;
+    my $body       = '';
+    my ( undef, $headers ) = await $self->_ua->http_get(
         $fetch_url,
         headers => $self->compile_headers,
+        on_body => sub {
+            my ( $part_body, undef ) = @_;
+
+            $body .= $part_body;
+
+            if ( time() > $timeout_at ) {
+                $log->warnf( 'timeout %ds fetching %s',
+                    $timeout, $self->url );
+                return 0;
+            }
+
+            $cur_size += length($part_body);
+            if ( $cur_size > $max_size ) {
+                $log->warnf( 'max size %d exceeded with %d fetching %s',
+                    $max_size, $cur_size, $self->url );
+                return 0;
+            }
+
+            return 1;
+        },
     );
     my $status = _get_update_status_reason($headers);
     $log->debugf('img fetch %d %s for %s finished in %.3fs',
